@@ -59,7 +59,7 @@ private[util] class BatchedWriteAheadLog(val wrappedLog: WriteAheadLog, conf: Sp
 
   private val walWriteQueue = new LinkedBlockingQueue[Record]()
 
-  // Whether the writer thread is active
+  // 写线程是否是激活状态
   @volatile private var active: Boolean = true
   private val buffer = new ArrayBuffer[Record]()
 
