@@ -36,7 +36,7 @@ case class Edge[@specialized(Char, Int, Boolean, Byte, Long, Float, Double) ED] 
   extends Serializable {
 
   /**
-   * Given one vertex in the edge return the other vertex.
+   * 给定一个顶点获取另外一个顶点
    *
    * @param vid the id one of the two vertices on the edge.
    * @return the id of the other vertex on the edge.
@@ -47,7 +47,7 @@ case class Edge[@specialized(Char, Int, Boolean, Byte, Long, Float, Double) ED] 
   /**
    * Return the relative direction of the edge to the corresponding
    * vertex.
-   *
+   * 根据指定顶点返回边的相关方向
    * @param vid the id of one of the two vertices in the edge.
    * @return the relative direction of the edge to the corresponding
    * vertex.
