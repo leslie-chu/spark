@@ -439,6 +439,7 @@ class ReceiverTracker(ssc: StreamingContext, skipReceiverLaunch: Boolean = false
   /**
    * Get the receivers from the ReceiverInputDStreams, distributes them to the
    * worker nodes as a parallel collection, and runs them.
+   * 在ReceiverTracker启动的过程中会调用其launchReceivers方法
    */
   private def launchReceivers(): Unit = {
     val receivers = receiverInputStreams.map { nis =>
@@ -446,10 +447,12 @@ class ReceiverTracker(ssc: StreamingContext, skipReceiverLaunch: Boolean = false
       rcvr.setReceiverId(nis.id)
       rcvr
     }
-
+    // 调用了runDummySparkJob方法来启动Spark Streaming的框架第一个Job，其中collect这个action操作会触发Spark Job的执行。
+    // 这个方法是为了确保每个Slave都注册上，避免所有Receiver都在一个节点，使后面的计算能负载均衡。
     runDummySparkJob()
 
     logInfo("Starting " + receivers.length + " receivers")
+    // Rpc消息通信体发送StartAllReceivers消息
     endpoint.send(StartAllReceivers(receivers))
   }
 
@@ -466,6 +469,7 @@ class ReceiverTracker(ssc: StreamingContext, skipReceiverLaunch: Boolean = false
   private def isTrackerStopped: Boolean = trackerState == Stopped
 
   /** RpcEndpoint to receive messages from the receivers. */
+  // 它自己接收到消息后，先根据调度策略获得Recevier在哪个Executor上运行，然后在调用startReceiver(receiver, executors)方法，来启动Receiver
   private class ReceiverTrackerEndpoint(override val rpcEnv: RpcEnv) extends ThreadSafeRpcEndpoint {
 
     private val walBatchingThreadPool = ExecutionContext.fromExecutorService(

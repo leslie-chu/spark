@@ -36,7 +36,7 @@ private[spark] abstract class EventLoop[E](name: String) extends Logging {
   private val eventQueue: BlockingQueue[E] = new LinkedBlockingDeque[E]()
 
   private val stopped = new AtomicBoolean(false)
-
+  // 一个单独的线程处理队列中的事件
   private val eventThread = new Thread(name) {
     setDaemon(true)
 

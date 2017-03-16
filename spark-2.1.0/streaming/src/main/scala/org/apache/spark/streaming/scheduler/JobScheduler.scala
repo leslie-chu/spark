@@ -64,18 +64,19 @@ class JobScheduler(val ssc: StreamingContext) extends Logging {
   private var executorAllocationManager: Option[ExecutorAllocationManager] = None
 
   private var eventLoop: EventLoop[JobSchedulerEvent] = null
-
+  // job schedular启动
   def start(): Unit = synchronized {
     if (eventLoop != null) return // scheduler has already been started
 
-    //启动EnventLoop,StreamingListenerBush,ReceiverTracker,jobGenerator
+    // 启动EnventLoop,StreamingListenerBush,ReceiverTracker,jobGenerator
     logDebug("Starting JobScheduler")
     eventLoop = new EventLoop[JobSchedulerEvent]("JobScheduler") {
+      // 下面两个方法在EventLoop实例化时已定义
       override protected def onReceive(event: JobSchedulerEvent): Unit = processEvent(event)
 
       override protected def onError(e: Throwable): Unit = reportError("Error in job scheduler", e)
     }
-    // 启动消息循环处理线程。用于处理JobScheduler的各种事件。
+    // 第一步 启动消息循环处理线程。用于处理JobScheduler的各种事件。包括两个队列,这个是事件队列
     eventLoop.start()
 
     // attach rate controllers of input streams to receive batch completion updates
@@ -85,8 +86,8 @@ class JobScheduler(val ssc: StreamingContext) extends Logging {
     } ssc.addStreamingListener(rateController)
     // 启动监听器。用于更新Spark UI中StreamTab的内容
     listenerBus.start()
-    //生成InputInfoTracker 用于管理所有的输入流,以及他们的数据数据统计
-    receiverTracker = new ReceiverTracker(ssc)
+    // 生成InputInfoTracker 用于管理所有的输入流,以及他们的数据数据统计
+    receiverTracker = new ReceiverTracker(ssc)//用于管理所有的输入的流，以及他们输入的数据统计。这些信息将通过 StreamingListener监听
     inputInfoTracker = new InputInfoTracker(ssc)
 
     val executorAllocClient: ExecutorAllocationClient = ssc.sparkContext.schedulerBackend match {
@@ -101,8 +102,8 @@ class JobScheduler(val ssc: StreamingContext) extends Logging {
       ssc.graph.batchDuration.milliseconds,
       clock)
     executorAllocationManager.foreach(ssc.addStreamingListener)
-    // 启动ReceiverTracker。用于处理数据接收、数据缓存、Block生成。
-    receiverTracker.start()
+  // 启动ReceiverTracker。用于处理数据接收、数据缓存、Block生成。
+    receiverTracker.start()// 会内部实例化ReceiverTrackerEndpoint这个Rpc消息通信体。
     // 启动JobGenerator。用于DStreamGraph初始化、DStream与RDD的转换、生成Job、提交执行等工作。
     jobGenerator.start()
     executorAllocationManager.foreach(_.start())
@@ -174,6 +175,7 @@ class JobScheduler(val ssc: StreamingContext) extends Logging {
   private def processEvent(event: JobSchedulerEvent) {
     try {
       event match {
+        //处理三类消息,job已开始,job已完成,错误报告
         case JobStarted(job, startTime) => handleJobStart(job, startTime)
         case JobCompleted(job, completedTime) => handleJobCompletion(job, completedTime)
         case ErrorReported(m, e) => handleError(m, e)
