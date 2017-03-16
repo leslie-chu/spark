@@ -68,12 +68,14 @@ class JobScheduler(val ssc: StreamingContext) extends Logging {
   def start(): Unit = synchronized {
     if (eventLoop != null) return // scheduler has already been started
 
+    //启动EnventLoop,StreamingListenerBush,ReceiverTracker,jobGenerator
     logDebug("Starting JobScheduler")
     eventLoop = new EventLoop[JobSchedulerEvent]("JobScheduler") {
       override protected def onReceive(event: JobSchedulerEvent): Unit = processEvent(event)
 
       override protected def onError(e: Throwable): Unit = reportError("Error in job scheduler", e)
     }
+    // 启动消息循环处理线程。用于处理JobScheduler的各种事件。
     eventLoop.start()
 
     // attach rate controllers of input streams to receive batch completion updates
@@ -81,8 +83,9 @@ class JobScheduler(val ssc: StreamingContext) extends Logging {
       inputDStream <- ssc.graph.getInputStreams
       rateController <- inputDStream.rateController
     } ssc.addStreamingListener(rateController)
-
+    // 启动监听器。用于更新Spark UI中StreamTab的内容
     listenerBus.start()
+    //生成InputInfoTracker 用于管理所有的输入流,以及他们的数据数据统计
     receiverTracker = new ReceiverTracker(ssc)
     inputInfoTracker = new InputInfoTracker(ssc)
 

@@ -560,7 +560,7 @@ class StreamingContext private[streaming] (
 
   /**
    * Start the execution of the streams.
-   *
+   * 开始执行streaming
    * @throws IllegalStateException if the StreamingContext is already stopped.
    */
   def start(): Unit = synchronized {
@@ -569,21 +569,23 @@ class StreamingContext private[streaming] (
         startSite.set(DStream.getCreationSite())
         StreamingContext.ACTIVATION_LOCK.synchronized {
           StreamingContext.assertNoOtherContextIsActive()
-          try {
+          try
             validate()
 
             // Start the streaming scheduler in a new thread, so that thread local properties
             // like call sites and job groups can be reset without affecting those of the
             // current thread.
+            //为了保证本地线程属性像call site和job group被reset而不影响当前线程,使用一个新的线程开始streaming调度
             ThreadUtils.runInNewThread("streaming-start") {
               sparkContext.setCallSite(startSite.get)
               sparkContext.clearJobGroup()
               sparkContext.setLocalProperty(SparkContext.SPARK_JOB_INTERRUPT_ON_CANCEL, "false")
               savedProperties.set(SerializationUtils.clone(sparkContext.localProperties.get()))
+              //启动jobSchedular
               scheduler.start()
             }
             state = StreamingContextState.ACTIVE
-          } catch {
+          catch {
             case NonFatal(e) =>
               logError("Error starting the context, marking it as stopped", e)
               scheduler.stop(false)
