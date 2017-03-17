@@ -102,9 +102,9 @@ class JobScheduler(val ssc: StreamingContext) extends Logging {
       ssc.graph.batchDuration.milliseconds,
       clock)
     executorAllocationManager.foreach(ssc.addStreamingListener)
-  // 启动ReceiverTracker。用于处理数据接收、数据缓存、Block生成。
+    // 第三部 启动ReceiverTracker。用于处理数据接收、数据缓存、Block生成。
     receiverTracker.start()// 会内部实例化ReceiverTrackerEndpoint这个Rpc消息通信体。
-    // 启动JobGenerator。用于DStreamGraph初始化、DStream与RDD的转换、生成Job、提交执行等工作。
+    // 第四部 启动JobGenerator。用于DStreamGraph初始化、DStream与RDD的转换、生成Job、提交执行等工作。
     jobGenerator.start()
     executorAllocationManager.foreach(_.start())
     logInfo("Started JobScheduler")
@@ -148,7 +148,7 @@ class JobScheduler(val ssc: StreamingContext) extends Logging {
     eventLoop = null
     logInfo("Stopped JobScheduler")
   }
-
+  // 向线程池中提交JobHandler JobHandler实现了Runnable 接口，最终调用了job.run()这个方法
   def submitJobSet(jobSet: JobSet) {
     if (jobSet.jobs.isEmpty) {
       logInfo("No jobs added for time " + jobSet.time)

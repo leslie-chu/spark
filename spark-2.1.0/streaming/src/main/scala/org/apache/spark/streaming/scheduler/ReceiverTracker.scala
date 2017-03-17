@@ -153,7 +153,7 @@ class ReceiverTracker(ssc: StreamingContext, skipReceiverLaunch: Boolean = false
     if (isTrackerStarted) {
       throw new SparkException("ReceiverTracker already started")
     }
-
+    //  Receiver的启动是依据输入数据流的。
     if (!receiverInputStreams.isEmpty) {
       endpoint = ssc.env.rpcEnv.setupEndpoint(
         "ReceiverTracker", new ReceiverTrackerEndpoint(ssc.env.rpcEnv))
@@ -429,7 +429,7 @@ class ReceiverTracker(ssc: StreamingContext, skipReceiverLaunch: Boolean = false
    * "spark.scheduler.minRegisteredResourcesRatio" and
    * "spark.scheduler.maxRegisteredResourcesWaitingTime" rather than running a dummy job.
    */
-  private def runDummySparkJob(): Unit = {
+  private def runDummySparkJob(): Unit = {// runDummySparkJob()是为了确保所有节点活着，而且避免所有的receivers集中在一个节点上。
     if (!ssc.sparkContext.isLocal) {
       ssc.sparkContext.makeRDD(1 to 50, 50).map(x => (x, 1)).reduceByKey(_ + _, 20).collect()
     }
@@ -443,6 +443,7 @@ class ReceiverTracker(ssc: StreamingContext, skipReceiverLaunch: Boolean = false
    */
   private def launchReceivers(): Unit = {
     val receivers = receiverInputStreams.map { nis =>
+      // 一个数据输入来源(receiverInputDStream)只对应一个Receiver
       val rcvr = nis.getReceiver()
       rcvr.setReceiverId(nis.id)
       rcvr
@@ -479,6 +480,10 @@ class ReceiverTracker(ssc: StreamingContext, skipReceiverLaunch: Boolean = false
 
     override def receive: PartialFunction[Any, Unit] = {
       // Local messages
+      // schedulingPolicy调度策略
+      // receivers就是要启动的receiver
+      // getExecutors获得集群中的Executors的列表
+      // scheduleReceivers就可以确定receiver可以运行在哪些Executor上
       case StartAllReceivers(receivers) =>
         val scheduledLocations = schedulingPolicy.scheduleReceivers(receivers, getExecutors)
         for (receiver <- receivers) {

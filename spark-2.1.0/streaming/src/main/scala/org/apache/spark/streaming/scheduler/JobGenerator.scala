@@ -56,7 +56,7 @@ class JobGenerator(jobScheduler: JobScheduler) extends Logging {
         Utils.classForName(newClockClass).newInstance().asInstanceOf[Clock]
     }
   }
-
+  // RecurringTimer 用于启动消息系统和定时器。按照batchInterval时间间隔定期发送GenerateJobs消息
   private val timer = new RecurringTimer(clock, ssc.graph.batchDuration.milliseconds,
     longTime => eventLoop.post(GenerateJobs(new Time(longTime))), "JobGenerator")
 
@@ -92,11 +92,13 @@ class JobGenerator(jobScheduler: JobScheduler) extends Logging {
         jobScheduler.reportError("Error in job generator", e)
       }
     }
+    // 启动消息循环处理线程
     eventLoop.start()
 
     if (ssc.isCheckpointPresent) {
       restart()
     } else {
+      // 开启定时生成Job的定时器
       startFirstTime()
     }
   }

@@ -320,6 +320,7 @@ abstract class DStream[T: ClassTag] (
   /**
    * Get the RDD corresponding to the given time; either retrieve it from cache
    * or compute-and-cache it.
+   * 通过给定时间找到对应的rdd,要嘛从cache恢复要嘛计算并cache它
    */
   private[streaming] final def getOrCompute(time: Time): Option[RDD[T]] = {
     // If RDD was already generated, then retrieve it from HashMap,
