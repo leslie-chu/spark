@@ -27,6 +27,7 @@ import org.apache.spark.mllib.fpm.FPGrowth
  * Example for mining frequent itemsets using FP-growth.
  * Example usage: ./bin/run-example mllib.FPGrowthExample \
  *   --minSupport 0.8 --numPartition 2 ./data/mllib/sample_fpgrowth.txt
+  *   频繁项集挖掘算法
  */
 object FPGrowthExample {
 

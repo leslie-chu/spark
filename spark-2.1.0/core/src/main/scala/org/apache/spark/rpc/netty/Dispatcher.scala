@@ -32,9 +32,11 @@ import org.apache.spark.util.ThreadUtils
 
 /**
  * A message dispatcher, responsible for routing RPC messages to the appropriate endpoint(s).
+ * 一个消息的调度器,职责是为rpc消息找到适当的endpoint
  */
 private[netty] class Dispatcher(nettyEnv: NettyRpcEnv) extends Logging {
-
+  //每一个命名唯一的RpcEndpoint对应一个线程安全的Inbox，所有发送给一个RpcEndpoint的消息
+  // 都由对应的Inbox将对应的消息路由给RpcEndpoint进行处理
   private class EndpointData(
       val name: String,
       val endpoint: RpcEndpoint,
@@ -56,7 +58,8 @@ private[netty] class Dispatcher(nettyEnv: NettyRpcEnv) extends Logging {
    */
   @GuardedBy("this")
   private var stopped = false
-
+  //一个RpcEndpoint只能注册一次（根据RpcEndpoint的名称来检查唯一性)
+  // 这样在Dispatcher内部注册并维护RpcEndpoint与RpcEndpointRef的绑定关系
   def registerRpcEndpoint(name: String, endpoint: RpcEndpoint): NettyRpcEndpointRef = {
     val addr = RpcEndpointAddress(nettyEnv.address, name)
     val endpointRef = new NettyRpcEndpointRef(nettyEnv.conf, addr, nettyEnv)

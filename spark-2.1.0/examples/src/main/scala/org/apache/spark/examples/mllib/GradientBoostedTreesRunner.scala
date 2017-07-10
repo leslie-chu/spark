@@ -110,6 +110,7 @@ object GradientBoostedTreesRunner {
     val randomSeed = Utils.random.nextInt()
     if (params.algo == "Classification") {
       val startTime = System.nanoTime()
+
       val model = GradientBoostedTrees.train(training, boostingStrategy)
       val elapsedTime = (System.nanoTime() - startTime) / 1e9
       println(s"Training time: $elapsedTime seconds")

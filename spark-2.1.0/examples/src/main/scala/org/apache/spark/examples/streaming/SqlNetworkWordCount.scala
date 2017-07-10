@@ -89,7 +89,7 @@ case class Record(word: String)
 /** Lazily instantiated singleton instance of SparkSession */
 object SparkSessionSingleton {
 
-  @transient  private var instance: SparkSession = _
+  @transient  private  var instance: SparkSession = _
 
   def getInstance(sparkConf: SparkConf): SparkSession = {
     if (instance == null) {

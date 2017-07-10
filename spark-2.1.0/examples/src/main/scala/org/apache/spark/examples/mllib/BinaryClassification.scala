@@ -29,7 +29,7 @@ import org.apache.spark.mllib.util.MLUtils
 
 /**
  * An example app for binary classification. Run with
- * {{{
+ * {{{  //二分类
  * bin/run-example org.apache.spark.examples.mllib.BinaryClassification
  * }}}
  * A synthetic dataset is located at `data/mllib/sample_binary_classification_data.txt`.
@@ -101,6 +101,43 @@ object BinaryClassification {
     }
   }
 
+  def runs(params: Params): Unit = {
+    val conf = new SparkConf()
+    val sc = new SparkContext(conf)
+    Logger.getRootLogger.setLevel(Level.WARN)
+    val examples = MLUtils.loadLibSVMFile(sc, params.input).cache()
+    val splits = examples.randomSplit(Array(0.8, 0.2))
+    val training = splits(0).cache()
+    val test = splits(1).cache()
+    val numTraining = training.count()
+    val numTest = test.count()
+
+    examples.unpersist(blocking = true)
+    val updater = params.regType match {
+      case L1 => new L1Updater()
+      case L2 => new SquaredL2Updater()
+    }
+    val model = params.algorithm match {
+      case LR =>
+        val algorithm = new LogisticRegressionWithLBFGS()
+        algorithm.optimizer
+          .setNumIterations(params.numIterations).setUpdater(updater).setRegParam(params.regParam)
+        algorithm.run(training).clearThreshold()
+      case SVM =>
+        val alogrithm = new SVMWithSGD()
+        alogrithm.optimizer
+          .setNumIterations(params.numIterations)
+          .setUpdater(updater).setRegParam(params.regParam)
+        alogrithm.run(training).clearThreshold()
+
+    }
+
+    val prediction = model.predict(test.map(_.features))
+    val predictionAndLabel = prediction.zip(test.map(_.label))
+    val metrics = new BinaryClassificationMetrics(predictionAndLabel)
+    println(metrics.areaUnderROC())
+    sc.stop()
+  }
   def run(params: Params): Unit = {
     val conf = new SparkConf().setAppName(s"BinaryClassification with $params")
     val sc = new SparkContext(conf)

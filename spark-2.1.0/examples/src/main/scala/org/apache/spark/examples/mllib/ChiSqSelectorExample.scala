@@ -25,7 +25,7 @@ import org.apache.spark.mllib.feature.ChiSqSelector
 import org.apache.spark.mllib.linalg.Vectors
 import org.apache.spark.mllib.regression.LabeledPoint
 import org.apache.spark.mllib.util.MLUtils
-// $example off$
+// $example off$    基于chi-squared 的特征选择器
 
 object ChiSqSelectorExample {
 

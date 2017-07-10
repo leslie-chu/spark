@@ -340,7 +340,8 @@ private[deploy] class Worker(
           " attempt scheduled already.")
     }
   }
-
+  //worker节电注册到master节点,发送一个RegisterWorker消息到masterEndpoint,并期望返回RegisterWorkerResponse
+  //对response做相应的处理,
   private def registerWithMaster(masterEndpoint: RpcEndpointRef): Unit = {
     masterEndpoint.ask[RegisterWorkerResponse](RegisterWorker(
       workerId, host, port, self, cores, memory, workerWebUiUrl))
@@ -585,6 +586,8 @@ private[deploy] class Worker(
   /**
    * Send a message to the current master. If we have not yet registered successfully with any
    * master, the message will be dropped.
+   * send一个消息到当前的master节点,如果还没有成功注册则消息会被dropped
+   * 会有一些心跳发送,状态改变等等
    */
   private def sendToMaster(message: Any): Unit = {
     master match {

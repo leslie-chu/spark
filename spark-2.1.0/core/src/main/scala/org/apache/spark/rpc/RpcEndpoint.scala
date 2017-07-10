@@ -46,14 +46,15 @@ private[spark] trait RpcEnvFactory {
 private[spark] trait RpcEndpoint {
 
   /**
-   * The [[RpcEnv]] that this [[RpcEndpoint]] is registered to.
+   * RpcEndpoint是一个通讯端,例如master,worker 启动的时候会创建一个 [[RpcEnv]] 当前[[RpcEndpoint]] 注册到RpcEnv.
+   * 如果想和另外一个RpcEndpoint端通信,一定要获取RpcEndpoint的RpcEndpointRef,而获取该RpcEndpointRef只能通过一个RpcEnv环境对象来获取
    */
   val rpcEnv: RpcEnv
 
   /**
    * The [[RpcEndpointRef]] of this [[RpcEndpoint]]. `self` will become valid when `onStart` is
    * called. And `self` will become `null` when `onStop` is called.
-   *
+   * RpcEndpointRef是用来发送消息的,随着onstart()而可用,随onStop()而消亡
    * Note: Because before `onStart`, [[RpcEndpoint]] has not yet been registered and there is not
    * valid [[RpcEndpointRef]] for it. So don't call `self` before `onStart` is called.
    */
@@ -65,6 +66,10 @@ private[spark] trait RpcEndpoint {
   /**
    * Process messages from [[RpcEndpointRef.send]] or [[RpcCallContext.reply)]]. If receiving a
    * unmatched message, [[SparkException]] will be thrown and sent to `onError`.
+   * 处理来自 RpcEndpointRef.send和RpcCallContext.reply)]的消息,如果收到不匹配的消息,
+   * 会抛出SparkException 并且会被发往onError
+   * 该类消息不需要进行响应(reply),只是在RpcEndpoint进行处理
+   *
    */
   def receive: PartialFunction[Any, Unit] = {
     case _ => throw new SparkException(self + " does not implement 'receive'")
@@ -73,6 +78,8 @@ private[spark] trait RpcEndpoint {
   /**
    * Process messages from [[RpcEndpointRef.ask]]. If receiving a unmatched message,
    * [[SparkException]] will be thrown and sent to `onError`.
+   * 处理来自RpcEndpointRef.ask的消息,异常处理同上
+   * RpcEndpoint端处理完成后,需要调用 RpcEndpointRef.ask通讯端口reply
    */
   def receiveAndReply(context: RpcCallContext): PartialFunction[Any, Unit] = {
     case _ => context.sendFailure(new SparkException(self + " won't reply anything"))
@@ -80,6 +87,7 @@ private[spark] trait RpcEndpoint {
 
   /**
    * Invoked when any exception is thrown during handling messages.
+   * 在处理消息的时候任何异常发生的时候都会被调用
    */
   def onError(cause: Throwable): Unit = {
     // By default, throw e and let RpcEnv handle it
@@ -110,7 +118,8 @@ private[spark] trait RpcEndpoint {
 
   /**
    * Invoked before [[RpcEndpoint]] starts to handle any message.
-   */
+   * onStart方法,主要功能是启动Jetty的WebUI服务，Rest服务、选出持久化引擎及持久化代理
+    */
   def onStart(): Unit = {
     // By default, do nothing.
   }

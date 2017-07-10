@@ -124,7 +124,7 @@ private[netty] class NettyRpcEnv(
   override lazy val address: RpcAddress = {
     if (server != null) RpcAddress(host, server.getPort()) else null
   }
-
+  //调用NettyRpcEnv内部的Dispatcher对象注册RpcEndPoint
   override def setupEndpoint(name: String, endpoint: RpcEndpoint): RpcEndpointRef = {
     dispatcher.registerRpcEndpoint(name, endpoint)
   }
@@ -507,6 +507,8 @@ private[netty] class NettyRpcEndpointRef(
     nettyEnv.ask(RequestMessage(nettyEnv.address, this, message), timeout)
   }
 
+  //通过NettyRpcEnv来发送RequestMessage消息，并将当前NettyRpcEndpointRef封装到RequestMessage消息对象中发送出去，
+  // 通信对端通过该NettyRpcEndpointRef能够识别出消息来源
   override def send(message: Any): Unit = {
     require(message != null, "Message is null")
     nettyEnv.send(RequestMessage(nettyEnv.address, this, message))
@@ -542,7 +544,9 @@ private[netty] case class RpcFailure(e: Throwable)
  * knows which `TransportClient` instance to use when sending RPCs to a client endpoint (i.e.,
  * one that is not listening for incoming connections, but rather needs to be contacted via the
  * client socket).
- *
+ * 分发过来的rpc请求到注册的endpoints上,handler监控所有和他通讯的客户端实例,如此以来rpcenv知道当要发送发送rpc到客户端endpoint
+ * 用哪一个TransportClient,
+ * events被发往每个链接,所以如果一个client打开了多个链接到rpcenv,将会为这多个客户端创建多个connection events
  * Events are sent on a per-connection basis, so if a client opens multiple connections to the
  * RpcEnv, multiple connection / disconnection events will be created for that client (albeit
  * with different `RpcAddress` information).

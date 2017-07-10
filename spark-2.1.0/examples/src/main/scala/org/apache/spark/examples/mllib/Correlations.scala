@@ -26,7 +26,7 @@ import org.apache.spark.mllib.util.MLUtils
 
 /**
  * An example app for summarizing multivariate data from a file. Run with
- * {{{
+ * {{{ 相关性
  * bin/run-example org.apache.spark.examples.mllib.Correlations
  * }}}
  * By default, this loads a synthetic dataset from `data/mllib/sample_linear_regression_data.txt`.

@@ -28,7 +28,7 @@ import org.apache.spark.mllib.linalg.{Vector, Vectors}
  * An example demonstrating a bisecting k-means clustering in spark.mllib.
  *
  * Run with
- * {{{
+ * {{{ 二分k均值
  * bin/run-example mllib.BisectingKMeansExample
  * }}}
  */

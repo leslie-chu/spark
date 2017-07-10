@@ -30,9 +30,11 @@ import org.apache.spark.util.RpcUtils
 /**
  * A RpcEnv implementation must have a [[RpcEnvFactory]] implementation with an empty constructor
  * so that it can be created via Reflection.
+ * RPC上下文环境，每个Rpc端点运行时依赖的上下文环境称之为RpcEnv
+ * 它负责管理RpcEndpoint的注册，以及如何从一个RpcEndpoint获取到一个RpcEndpointRef
  */
 private[spark] object RpcEnv {
-
+  //RpcEnv的3一个伴生对象，实现了create方法,调用了Netty工厂方法NettyRpcEnvFactory
   def create(
       name: String,
       host: String,
@@ -66,6 +68,9 @@ private[spark] object RpcEnv {
  * sender, or logging them if no such sender or `NotSerializableException`.
  *
  * [[RpcEnv]] also provides some methods to retrieve [[RpcEndpointRef]]s given name or uri.
+ * rpc环境,RpcEndpoint必须带名字注册到RpcEnv来收取消息,RpcEnv 会处理来自RpcEndpointRef或者远程节点的消息
+ * 并传递到相应的RpcEndpoint,如果RpcEnv捕获到未捕获的异常,会RpcCallContext.sendFailure来往sender发送异常
+ * 如果没有这个sender or NotSerializableException会以日志的形式记录
  */
 private[spark] abstract class RpcEnv(conf: SparkConf) {
 
@@ -79,22 +84,27 @@ private[spark] abstract class RpcEnv(conf: SparkConf) {
 
   /**
    * Return the address that [[RpcEnv]] is listening to.
+   * 返回 RpcEnv正在监听的地址
    */
   def address: RpcAddress
 
   /**
    * Register a [[RpcEndpoint]] with a name and return its [[RpcEndpointRef]]. [[RpcEnv]] does not
    * guarantee thread-safety.
+   * 注册一个RpcEndpoint到RpcEnv中,RpcEnv来管理RpcEndpoint到RpcEndpointRef的绑定关系
+   * 每个RpcEndpoint都有一个唯一的名称,并返回RpcEndpointRef,但不保证线程安全
    */
   def setupEndpoint(name: String, endpoint: RpcEndpoint): RpcEndpointRef
 
   /**
    * Retrieve the [[RpcEndpointRef]] represented by `uri` asynchronously.
+   * 通过uri异步查询RpcEndpointRe
    */
   def asyncSetupEndpointRefByURI(uri: String): Future[RpcEndpointRef]
 
   /**
    * Retrieve the [[RpcEndpointRef]] represented by `uri`. This is a blocking action.
+   * 通过uri查询RpcEndpointRef，这种方式会产生阻塞
    */
   def setupEndpointRefByURI(uri: String): RpcEndpointRef = {
     defaultLookupTimeout.awaitResult(asyncSetupEndpointRefByURI(uri))
@@ -103,6 +113,7 @@ private[spark] abstract class RpcEnv(conf: SparkConf) {
   /**
    * Retrieve the [[RpcEndpointRef]] represented by `address` and `endpointName`.
    * This is a blocking action.
+   *  通过address和endpointName查询RpcEndpointRef，这种方式会产生阻塞
    */
   def setupEndpointRef(address: RpcAddress, endpointName: String): RpcEndpointRef = {
     setupEndpointRefByURI(RpcEndpointAddress(address, endpointName).toString)
@@ -129,6 +140,7 @@ private[spark] abstract class RpcEnv(conf: SparkConf) {
   /**
    * [[RpcEndpointRef]] cannot be deserialized without [[RpcEnv]]. So when deserializing any object
    * that contains [[RpcEndpointRef]]s, the deserialization codes should be wrapped by this method.
+   * 没有RpcEnv的话RpcEndpointRef是无法被反序列化的，这里是反序列化逻辑
    */
   def deserialize[T](deserializationAction: () => T): T
 

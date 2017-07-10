@@ -1036,6 +1036,9 @@ private[deploy] object Master extends Logging {
    *   (1) The Master RpcEnv
    *   (2) The web UI bound port
    *   (3) The REST server bound port, if any
+   *   创建一个RpcEnv对象，通过创建一个NettyRpcEnvFactory对象来完成该RpcEnv对象的创建，
+    *   实际创建了一个NettyRpcEnv对象。接着，通过setupEndpoint方法注册一个RpcEndpoint，
+    *   这里Master就是一个RpcEndpoint，返回的masterEndpoint是Master的RpcEndpointRef引用对象。
    */
   def startRpcEnvAndEndpoint(
       host: String,

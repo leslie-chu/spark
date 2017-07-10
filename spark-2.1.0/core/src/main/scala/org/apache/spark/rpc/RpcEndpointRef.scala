@@ -26,6 +26,7 @@ import org.apache.spark.util.RpcUtils
 
 /**
  * A reference for a remote [[RpcEndpoint]]. [[RpcEndpointRef]] is thread-safe.
+ * RpcEndpointRef是一个对RpcEndpoint的远程引用对象,通过它可以向远程的RpcEndpoint端发送消息以进行通信
  */
 private[spark] abstract class RpcEndpointRef(conf: SparkConf)
   extends Serializable with Logging {
@@ -43,6 +44,7 @@ private[spark] abstract class RpcEndpointRef(conf: SparkConf)
 
   /**
    * Sends a one-way asynchronous message. Fire-and-forget semantics.
+   *  send方法发送消息后不等待响应，亦即Send-and-forget，Spark中基于Netty实现，实现在NettyRpcEndpointRef中
    */
   def send(message: Any): Unit
 
@@ -51,6 +53,7 @@ private[spark] abstract class RpcEndpointRef(conf: SparkConf)
    * receive the reply within the specified timeout.
    *
    * This method only sends the message once and never retries.
+   * 而ask方法发送消息后需要等待通信对端给予响应，通过Future来异步获取响应结果,也是在NettyRpcEndpointRef中实现
    */
   def ask[T: ClassTag](message: Any, timeout: RpcTimeout): Future[T]
 
